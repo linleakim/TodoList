@@ -3,6 +3,9 @@ package ui;
 import dal.IRepository;
 import dal.IUserRepository;
 import dal.MongoRepository;
+import dal.IMessageRepository;
+import dal.MongoMessageRepository;
+import services.MessageService;
 
 import javax.swing.*;
 
@@ -42,8 +45,16 @@ public class LoginFrame extends JFrame {
 
             if (userRepo.login(user, pass)) {
                 dispose();
-                IRepository todoRepo = new MongoRepository(user); // mane repository 
-                new TodoSplitApp(todoRepo, userRepo); // open main window 
+
+                // Create repositories
+                IRepository todoRepo = new MongoRepository(user); // main todo repository
+                IMessageRepository messageRepo = new MongoMessageRepository(); // NEW: message repository
+
+                // Create message service
+                MessageService messageService = new MessageService(messageRepo); // NEW: message service
+
+                // Open main window with messaging support
+                new TodoSplitApp(todoRepo, userRepo, messageService); // UPDATED: added messageService parameter
             } else {
                 JOptionPane.showMessageDialog(this, "wrong username or password ");
             }

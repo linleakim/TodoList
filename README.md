@@ -54,7 +54,7 @@ Desktop-Anwendung mit Java Swing:
 
 ## UML-Diagramm
 
-![UML-Klassendiagramm](path/to/your/uml-diagram.svg)
+![image](https://github.com/user-attachments/assets/2e3f87d0-b79d-4a6b-a953-0b358599cdf6)
 
 *Das UML-Diagramm zeigt die Beziehung zwischen der Datenzugriffsschicht, den Benutzeroberflächenkomponenten und der Hauptanwendungsstruktur.*
 

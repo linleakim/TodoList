@@ -3,6 +3,7 @@ package ui;
 import dal.IRepository;
 import dal.IUserRepository;
 import dal.TodoTask;
+import dal.TaskStatus;
 import services.MessageService;
 import models.Message;
 
@@ -20,6 +21,9 @@ public class TodoSplitApp {
     private JTextField nameField;
     private JTextField descField;
     private JTextArea contentArea;
+    private JComboBox<TaskStatus> statusComboBox; // NEW: Status dropdown
+    private JButton saveButton; // NEW: Save button for editing
+    private TodoTask currentSelectedTask; // NEW: Track selected task
     private String username;
     private IUserRepository userRepository;
 
@@ -41,6 +45,7 @@ public class TodoSplitApp {
     }
 
     private void initUI() {
+
         JFrame frame = new JFrame("Todo App — user: " + username);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(800, 650);
@@ -50,37 +55,56 @@ public class TodoSplitApp {
         JLabel userLabel = new JLabel("You are logged in as: " + username);
         frame.add(userLabel, BorderLayout.SOUTH);
 
-        // left
-        JPanel detailPanel = new JPanel(new BorderLayout());
-        JPanel fields = new JPanel(new GridLayout(2, 1, 5, 5));
-
+        // left panel components
         nameField = new JTextField();
         descField = new JTextField();
+        nameField.setEditable(false);
+        descField.setEditable(false);
+
+        statusComboBox = new JComboBox<>(TaskStatus.values());
         contentArea = new JTextArea(10, 20);
         contentArea.setLineWrap(true);
         contentArea.setWrapStyleWord(true);
         contentArea.setEditable(false);
 
-        fields.add(new LabeledField("Name:", nameField));
-        fields.add(new LabeledField("Description:", descField));
+        // Create save button
+        saveButton = new JButton("Save Changes");
+        saveButton.setEnabled(false);
+        saveButton.addActionListener(e -> saveCurrentTask());
 
-        detailPanel.add(fields, BorderLayout.NORTH);
-        detailPanel.add(new JScrollPane(contentArea), BorderLayout.CENTER);
-
-        // right
+        // right panel components
         listModel = new DefaultListModel<>();
         taskList = new JList<>(listModel);
         taskList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         taskList.setCellRenderer(new TaskCellRenderer());
 
-        taskList.addListSelectionListener(e -> {
-            TodoTask selected = taskList.getSelectedValue();
-            if (selected != null) {
-                nameField.setText(selected.getName());
-                descField.setText(selected.getDescription());
-                contentArea.setText(selected.getContent());
-            }
-        });
+        // left panel layout
+        JPanel detailPanel = new JPanel(new BorderLayout());
+        JPanel fields = new JPanel(new GridLayout(3, 1, 5, 5));
+
+        // Create individual labeled panels
+        JPanel namePanel = new JPanel(new BorderLayout(5, 5));
+        namePanel.add(new JLabel("Name:"), BorderLayout.WEST);
+        namePanel.add(nameField, BorderLayout.CENTER);
+
+        JPanel descPanel = new JPanel(new BorderLayout(5, 5));
+        descPanel.add(new JLabel("Description:"), BorderLayout.WEST);
+        descPanel.add(descField, BorderLayout.CENTER);
+
+        JPanel statusPanel = new JPanel(new BorderLayout(5, 5));
+        statusPanel.add(new JLabel("Status:"), BorderLayout.WEST);
+        statusPanel.add(statusComboBox, BorderLayout.CENTER);
+
+        fields.add(namePanel);
+        fields.add(descPanel);
+        fields.add(statusPanel);
+
+        JPanel savePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        savePanel.add(saveButton);
+
+        detailPanel.add(fields, BorderLayout.NORTH);
+        detailPanel.add(new JScrollPane(contentArea), BorderLayout.CENTER);
+        detailPanel.add(savePanel, BorderLayout.SOUTH);
 
         JScrollPane listScroll = new JScrollPane(taskList);
 
@@ -115,9 +139,36 @@ public class TodoSplitApp {
 
         frame.add(verticalSplitPane, BorderLayout.CENTER);
 
+        taskList.addListSelectionListener(e -> {
+
+            TodoTask selected = taskList.getSelectedValue();
+            if (selected != null) {
+                currentSelectedTask = selected;
+                nameField.setText(selected.getName());
+                descField.setText(selected.getDescription());
+                contentArea.setText(selected.getContent());
+
+                if (statusComboBox != null) {
+                    statusComboBox.setSelectedItem(selected.getStatus());
+                }
+
+                // Enable editing
+                nameField.setEditable(true);
+                descField.setEditable(true);
+                contentArea.setEditable(true);
+                saveButton.setEnabled(true);
+            } else {
+                currentSelectedTask = null;
+                clearDetailFields();
+                if (saveButton != null) {
+                    saveButton.setEnabled(false);
+                }
+            }
+        });
+
         loadTasks();
         loadGroupMessages();
-        startMessageRefreshTimer(); // NEW: Start the auto-refresh timer
+        startMessageRefreshTimer();
 
         frame.setVisible(true);
     }
@@ -175,7 +226,7 @@ public class TodoSplitApp {
         return messagingPanel;
     }
 
-    // Handle sending messages
+    // Handle sending messages - delegates to MessageService
     private void sendMessage() {
         String messageText = myMessagesArea.getText().trim();
         if (!messageText.isEmpty()) {
@@ -251,13 +302,13 @@ public class TodoSplitApp {
         }
     }
 
-    // Start the message refresh timer
+    // NEW: Start the message refresh timer
     private void startMessageRefreshTimer() {
         messageRefreshTimer = new Timer(2000, e -> checkForNewMessages()); // 2 seconds interval
         messageRefreshTimer.start();
     }
 
-    // Check for new messages and update if needed
+    // NEW: Check for new messages and update if needed
     private void checkForNewMessages() {
         try {
             // Get the latest message from the database
@@ -288,7 +339,62 @@ public class TodoSplitApp {
         }
     }
 
-    // Stop the timer when the window is closed
+    // NEW: Save current task changes
+    private void saveCurrentTask() {
+        if (currentSelectedTask == null) return;
+
+        try {
+            // Get values from fields
+            String name = nameField.getText().trim();
+            String description = descField.getText().trim();
+            String content = contentArea.getText().trim();
+            TaskStatus status = (TaskStatus) statusComboBox.getSelectedItem();
+
+            // Validate
+            if (name.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Task name cannot be empty.",
+                        "Validation Error", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            // Update the task
+            currentSelectedTask.setName(name);
+            currentSelectedTask.setDescription(description);
+            currentSelectedTask.setContent(content);
+            currentSelectedTask.setStatus(status);
+
+            // Save to database
+            repository.update(currentSelectedTask);
+
+            // Refresh the task list to show updated status
+            loadTasks();
+
+            // Show success message
+            JOptionPane.showMessageDialog(null, "Task updated successfully!",
+                    "Success", JOptionPane.INFORMATION_MESSAGE);
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, "Failed to save task: " + e.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    // NEW: Clear detail fields
+    private void clearDetailFields() {
+        nameField.setText("");
+        descField.setText("");
+        contentArea.setText("");
+        if (statusComboBox != null) { // ADD null check
+            statusComboBox.setSelectedItem(TaskStatus.NOT_STARTED);
+        }
+
+        // Disable editing
+        nameField.setEditable(false);
+        descField.setEditable(false);
+        contentArea.setEditable(false);
+    }
+
+    // NEW: Stop the timer when the window is closed (good practice)
     public void dispose() {
         if (messageRefreshTimer != null) {
             messageRefreshTimer.stop();
@@ -307,7 +413,8 @@ public class TodoSplitApp {
         public Component getListCellRendererComponent(JList<?> list, Object value, int index,
                                                       boolean isSelected, boolean cellHasFocus) {
             if (value instanceof TodoTask task) {
-                value = task.getName();
+                // NEW: Use the toString() method which includes status
+                value = task.toString(); // This will show "Task Name [Status]"
             }
             return super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
         }
@@ -319,7 +426,16 @@ public class TodoSplitApp {
             super(new BorderLayout(5, 5));
             add(new JLabel(label), BorderLayout.WEST);
             add(field, BorderLayout.CENTER);
-            field.setEditable(false);
+            field.setEditable(false); // Start as non-editable
+        }
+    }
+
+    // NEW: Separate class for combo box labeled field
+    private static class LabeledFieldCombo extends JPanel {
+        public LabeledFieldCombo(String label, JComboBox<?> comboBox) {
+            super(new BorderLayout(5, 5));
+            add(new JLabel(label), BorderLayout.WEST);
+            add(comboBox, BorderLayout.CENTER);
         }
     }
 }

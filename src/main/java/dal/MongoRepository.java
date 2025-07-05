@@ -19,7 +19,7 @@ public class MongoRepository implements IRepository {
     private final String uri = "mongodb://localhost:27017";
     private final String databaseName = "ToDoApp";
     private final MongoClient mongoClient;
-    private final String username; // user 
+    private final String username;
 
     public MongoRepository(String username) {
         this.mongoClient = MongoClients.create(uri);
@@ -36,10 +36,11 @@ public class MongoRepository implements IRepository {
         if (task.getId() != null) {
             doc.append("_id", task.getId());
         }
-        doc.append("username", username); // save user 
+        doc.append("username", username);
         doc.append("name", task.getName());
         doc.append("description", task.getDescription());
         doc.append("content", task.getContent());
+        doc.append("status", task.getStatus().getDisplayName()); // NEW: Save status
         return doc;
     }
 
@@ -50,7 +51,11 @@ public class MongoRepository implements IRepository {
 
     @Override
     public void add(TodoTask task) {
-        task.setUsername(username); // set user 
+        task.setUsername(username);
+        // Ensure status is set to default if null
+        if (task.getStatus() == null) {
+            task.setStatus(TaskStatus.NOT_STARTED);
+        }
         getTodoCollection().insertOne(toDocument(task));
     }
 
@@ -66,7 +71,8 @@ public class MongoRepository implements IRepository {
                 combine(
                         set("name", task.getName()),
                         set("description", task.getDescription()),
-                        set("content", task.getContent())
+                        set("content", task.getContent()),
+                        set("status", task.getStatus().getDisplayName()) // NEW: Update status
                 )
         );
     }
@@ -76,13 +82,18 @@ public class MongoRepository implements IRepository {
         var cursor = getTodoCollection().find(eq("username", username));
 
         for (Document doc : cursor) {
+            // NEW: Load status from database
+            String statusString = doc.getString("status");
+            TaskStatus status = TaskStatus.fromString(statusString);
+
             TodoTask task = new TodoTask(
                     doc.getString("name"),
                     doc.getString("description"),
-                    doc.getString("content")
+                    doc.getString("content"),
+                    status // NEW: Pass status to constructor
             );
             task.setId(doc.getObjectId("_id"));
-            task.setUsername(username); //
+            task.setUsername(username);
             tasks.add(task);
         }
 

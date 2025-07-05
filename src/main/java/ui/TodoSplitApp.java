@@ -18,6 +18,12 @@ public class TodoSplitApp {
     private JTextArea contentArea;
     private String username;
     private IUserRepository userRepository;
+    
+    // Message components**
+    private JTextArea groupMessagesArea;
+    private JTextArea myMessagesArea;
+    private JButton sendButton;
+    private DefaultListModel<String> groupMessagesModel;
 
     public TodoSplitApp(IRepository repository, IUserRepository userRepository) {
         this.repository = repository;
@@ -29,7 +35,7 @@ public class TodoSplitApp {
     private void initUI() {
         JFrame frame = new JFrame("Todo App — user: " + username);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(800, 500);
+        frame.setSize(800, 650); 
         frame.setLocationRelativeTo(null);
 
         // note
@@ -91,11 +97,117 @@ public class TodoSplitApp {
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, detailPanel, listScroll);
         splitPane.setDividerLocation(500);
 
-        frame.add(splitPane, BorderLayout.CENTER);
+        // Create messaging section**
+        JPanel messagingSection = createMessagingSection();
+        JSplitPane verticalSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, splitPane, messagingSection);
+        verticalSplitPane.setDividerLocation(400); // Adjust as needed
+        verticalSplitPane.setResizeWeight(0.7); // Give more space to main content
+
+        frame.add(verticalSplitPane, BorderLayout.CENTER); 
 
         loadTasks();
 
         frame.setVisible(true);
+    }
+
+    // Create the messaging section with Group Messages and My Messages panels
+    private JPanel createMessagingSection() {
+        JPanel messagingPanel = new JPanel(new BorderLayout());
+        messagingPanel.setBorder(BorderFactory.createTitledBorder("Messaging"));
+        
+        // Create Group Messages panel (upper panel)
+        JPanel groupMessagesPanel = new JPanel(new BorderLayout());
+        groupMessagesPanel.setBorder(BorderFactory.createTitledBorder("Group"));
+        
+        groupMessagesArea = new JTextArea(10, 30);
+        groupMessagesArea.setEditable(false);
+        groupMessagesArea.setLineWrap(true);
+        groupMessagesArea.setWrapStyleWord(true);
+        groupMessagesArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        
+        JScrollPane groupScrollPane = new JScrollPane(groupMessagesArea);
+        groupScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+        groupScrollPane.setPreferredSize(new Dimension(0, 200)); // 10 visible rows approximately
+        
+        groupMessagesPanel.add(groupScrollPane, BorderLayout.CENTER);
+        
+        // Create My Messages panel (lower panel)
+        JPanel myMessagesPanel = new JPanel(new BorderLayout());
+        myMessagesPanel.setBorder(BorderFactory.createTitledBorder("Me"));
+        
+        myMessagesArea = new JTextArea(2, 30); // 2 rows height
+        myMessagesArea.setLineWrap(true);
+        myMessagesArea.setWrapStyleWord(true);
+        myMessagesArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        
+        JScrollPane myScrollPane = new JScrollPane(myMessagesArea);
+        myScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        
+        sendButton = new JButton("Send");
+        sendButton.addActionListener(e -> sendMessage());
+        
+        // Create panel for text area and send button
+        JPanel inputPanel = new JPanel(new BorderLayout());
+        inputPanel.add(myScrollPane, BorderLayout.CENTER);
+        inputPanel.add(sendButton, BorderLayout.EAST);
+        
+        myMessagesPanel.add(inputPanel, BorderLayout.CENTER);
+        
+        // Combine both panels vertically
+        JSplitPane messagesSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, groupMessagesPanel, myMessagesPanel);
+        messagesSplitPane.setDividerLocation(200);
+        messagesSplitPane.setResizeWeight(0.8); // Give more space to group messages
+        
+        messagingPanel.add(messagesSplitPane, BorderLayout.CENTER);
+        
+        // Load initial group messages (placeholder)
+        loadGroupMessages();
+        
+        return messagingPanel;
+    }
+    
+    // Handle sending messages
+    private void sendMessage() {
+        String message = myMessagesArea.getText().trim();
+        if (!message.isEmpty()) {
+            // TODO: Send message to database/server
+            System.out.println("Sending message: " + message);
+            
+            // Add message to group messages (for demonstration)
+            String timestamp = java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
+            String formattedMessage = "[" + timestamp + "] " + username + ": " + message + "\n";
+            groupMessagesArea.append(formattedMessage);
+            
+            // Clear input field
+            myMessagesArea.setText("");
+            
+            // Scroll to bottom of group messages
+            groupMessagesArea.setCaretPosition(groupMessagesArea.getDocument().getLength());
+        }
+    }
+    
+    // Load group messages from database (placeholder)
+    private void loadGroupMessages() {
+        // TODO: Load messages from database
+        // For now, add some sample messages
+        groupMessagesArea.append("[10:30] System: Welcome to the group chat!\n");
+        groupMessagesArea.append("[10:31] Alice: Hello everyone!\n");
+        groupMessagesArea.append("[10:32] Bob: Good morning!\n");
+        
+        // Limit to 100 rows (approximate)
+        limitGroupMessagesRows();
+    }
+    
+    // Limit group messages to maximum 100 rows
+    private void limitGroupMessagesRows() {
+        String[] lines = groupMessagesArea.getText().split("\n");
+        if (lines.length > 100) {
+            StringBuilder limitedText = new StringBuilder();
+            for (int i = lines.length - 100; i < lines.length; i++) {
+                limitedText.append(lines[i]).append("\n");
+            }
+            groupMessagesArea.setText(limitedText.toString());
+        }
     }
 
     private void loadTasks() {

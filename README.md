@@ -17,9 +17,13 @@ Eine Java Swing-basierte Desktop-Todo-Anwendung mit Benutzerauthentifizierung un
 ### 📝 Aufgabenverwaltung
 - **Aufgaben erstellen**: Neue Todo-Aufgaben mit Name, Beschreibung und Inhalt hinzufügen
 - **Aufgaben anzeigen**: Alle Aufgaben für den aktuellen Benutzer anzeigen
-- **Aufgaben aktualisieren**: Bestehende Aufgabendetails bearbeiten
-- **Aufgaben löschen**: Aufgaben aus dem System entfernen
 - **Benutzerisolierung**: Jeder Benutzer kann nur seine eigenen Aufgaben sehen und verwalten
+
+### 💬 Chat-Funktionalität
+- **Gruppennachrichten**: Anzeige von Gruppenchat-Nachrichten in einem eigenen Bereich
+- **Nachrichten senden**: Eigene Nachrichten mit Zeitstempel an die Gruppe senden
+- **Nachrichtenverlauf**: Automatische Begrenzung auf maximal 100 Nachrichten
+- **Benutzeridentifikation**: Nachrichten werden mit Benutzername und Zeitstempel angezeigt
 
 ### 💾 Datenpersistierung
 - **MongoDB-Integration**: Alle Daten werden in einer MongoDB-Datenbank gespeichert
@@ -42,7 +46,7 @@ Desktop-Anwendung mit Java Swing:
 
 - **`LoginFrame`**: Hauptanmeldefenster für Benutzerauthentifizierung
 - **`RegisterDialog`**: Benutzerregistrierungsdialog
-- **`TodoSplitApp`**: Hauptanwendungsfenster für Aufgabenverwaltung
+- **`TodoSplitApp`**: Hauptanwendungsfenster für Aufgabenverwaltung und Chat-Funktionalität
 - **`CreateTaskDialog`**: Dialog zum Erstellen neuer Aufgaben
 
 ### Anwendungseinstiegspunkt
@@ -119,7 +123,12 @@ mvn exec:java -Dexec.mainClass="org.example.App"
    - Verwenden Sie "Neue Aufgabe", um Todos zu erstellen
    - Füllen Sie Aufgabenname, Beschreibung und Inhalt aus
    - Sehen Sie alle Ihre Aufgaben im Hauptfenster
-   - Bearbeiten oder löschen Sie Aufgaben nach Bedarf
+     
+4. **Chat verwenden**:
+   - Gruppennachrichten werden im oberen Chat-Bereich angezeigt
+   - Schreiben Sie Ihre Nachricht in das untere Textfeld
+   - Klicken Sie "Send", um Nachrichten an die Gruppe zu senden
+   - Nachrichten erscheinen mit Zeitstempel und Benutzername
 
 ## Sicherheitsfeatures
 
@@ -127,13 +136,3 @@ mvn exec:java -Dexec.mainClass="org.example.App"
 - Benutzersitzungsverwaltung
 - Datenisolierung zwischen Benutzern
 - Eingabevalidierung für Aufgabenerstellung
-
-## Zukünftige Verbesserungen
-
-- Passwort-Hashing für verbesserte Sicherheit
-- Aufgabenkategorien und Prioritäten
-- Fälligkeitsdaten und Erinnerungen
-- Such- und Filterfunktionalität
-- Export-/Importfunktionen
-- Mehrsprachige Unterstützung
-

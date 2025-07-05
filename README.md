@@ -3,7 +3,7 @@
 Eine Java Swing-basierte Desktop-Todo-Anwendung mit Benutzerauthentifizierung und MongoDB-Integration. Diese Anwendung ermöglicht es Benutzern, Konten zu erstellen, sich anzumelden und ihre persönlichen Todo-Aufgaben mit vollständigen CRUD-Operationen zu verwalten.
 
 ## Authors
-- Linlea - Documentation (README, UML), Chat Function
+- Linlea - Documentation (README, UML), Chat Function, Task Status Infomation, Edit/Delete Task Function
 - Sofiia - Java GUI code
 - Kateryna - Java Logic code
 

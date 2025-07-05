@@ -146,6 +146,15 @@ public class MongoMessageRepository implements IMessageRepository {
         return doc != null ? fromDocument(doc) : null;
     }
 
+    @Override
+    public Message getLatestMessage() {
+        Document doc = getMessageCollection().find()
+                .sort(Sorts.descending("timestamp"))
+                .limit(1)
+                .first();
+        return doc != null ? fromDocument(doc) : null;
+    }
+
     public void close() {
         if (mongoClient != null) {
             mongoClient.close();

@@ -36,4 +36,8 @@ public class MessageService {
     public void deleteOldMessages(int keepCount) {
         messageRepository.deleteOldMessages(keepCount);
     }
+
+    public Message getLatestMessage() {
+        return messageRepository.getLatestMessage();
+    }
 }

@@ -12,4 +12,5 @@ public interface IMessageRepository {
     Message findById(ObjectId id);
     void remove(ObjectId id);
     void update(Message message);
+    Message getLatestMessage();
 }

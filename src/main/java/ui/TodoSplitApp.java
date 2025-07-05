@@ -8,6 +8,7 @@ import models.Message;
 
 import javax.swing.*;
 import java.awt.*;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class TodoSplitApp {
@@ -26,6 +27,10 @@ public class TodoSplitApp {
     private JTextArea groupMessagesArea;
     private JTextArea myMessagesArea;
     private JButton sendButton;
+
+    // Timer for auto-refresh
+    private Timer messageRefreshTimer;
+    private LocalDateTime lastDisplayedMessageTime;
 
     public TodoSplitApp(IRepository repository, IUserRepository userRepository, MessageService messageService) {
         this.repository = repository;
@@ -47,7 +52,7 @@ public class TodoSplitApp {
 
         // left
         JPanel detailPanel = new JPanel(new BorderLayout());
-        JPanel fields = new JPanel(new GridLayout(2, 1, 5, 5)); // 2 fields - name description 
+        JPanel fields = new JPanel(new GridLayout(2, 1, 5, 5));
 
         nameField = new JTextField();
         descField = new JTextField();
@@ -62,7 +67,7 @@ public class TodoSplitApp {
         detailPanel.add(fields, BorderLayout.NORTH);
         detailPanel.add(new JScrollPane(contentArea), BorderLayout.CENTER);
 
-        // right 
+        // right
         listModel = new DefaultListModel<>();
         taskList = new JList<>(listModel);
         taskList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -79,7 +84,7 @@ public class TodoSplitApp {
 
         JScrollPane listScroll = new JScrollPane(taskList);
 
-        // buttoms 
+        // buttons
         JButton addButton = new JButton("Make new task ");
         addButton.addActionListener(e -> {
             new CreateTaskDialog(frame, repository, this::loadTasks).setVisible(true);
@@ -87,7 +92,7 @@ public class TodoSplitApp {
 
         JButton logoutButton = new JButton("Exit");
         logoutButton.addActionListener(e -> {
-            frame.dispose(); // close main window 
+            frame.dispose();
             SwingUtilities.invokeLater(() -> new LoginFrame(userRepository).setVisible(true));
         });
 
@@ -96,7 +101,7 @@ public class TodoSplitApp {
         topPanel.add(logoutButton);
         frame.add(topPanel, BorderLayout.NORTH);
 
-        // between 
+        // between
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, detailPanel, listScroll);
         splitPane.setDividerLocation(500);
 
@@ -112,6 +117,7 @@ public class TodoSplitApp {
 
         loadTasks();
         loadGroupMessages();
+        startMessageRefreshTimer(); // NEW: Start the auto-refresh timer
 
         frame.setVisible(true);
     }
@@ -169,7 +175,7 @@ public class TodoSplitApp {
         return messagingPanel;
     }
 
-    // Handle sending messages - delegates to MessageService
+    // Handle sending messages
     private void sendMessage() {
         String messageText = myMessagesArea.getText().trim();
         if (!messageText.isEmpty()) {
@@ -198,8 +204,15 @@ public class TodoSplitApp {
             List<Message> messages = messageService.getAllMessages();
             groupMessagesArea.setText(""); // Clear existing messages
 
+            lastDisplayedMessageTime = null; // Reset timestamp tracker
+
             for (Message message : messages) {
                 displayMessage(message);
+                // Track the latest message timestamp
+                if (lastDisplayedMessageTime == null ||
+                        message.getTimestamp().isAfter(lastDisplayedMessageTime)) {
+                    lastDisplayedMessageTime = message.getTimestamp();
+                }
             }
 
         } catch (Exception e) {
@@ -215,6 +228,12 @@ public class TodoSplitApp {
                 message.getUsername(),
                 message.getContent());
         groupMessagesArea.append(formattedMessage);
+
+        // Update the last displayed message time
+        if (lastDisplayedMessageTime == null ||
+                message.getTimestamp().isAfter(lastDisplayedMessageTime)) {
+            lastDisplayedMessageTime = message.getTimestamp();
+        }
 
         // Limit to 100 rows
         limitGroupMessagesRows();
@@ -232,13 +251,57 @@ public class TodoSplitApp {
         }
     }
 
+    // Start the message refresh timer
+    private void startMessageRefreshTimer() {
+        messageRefreshTimer = new Timer(2000, e -> checkForNewMessages()); // 2 seconds interval
+        messageRefreshTimer.start();
+    }
+
+    // Check for new messages and update if needed
+    private void checkForNewMessages() {
+        try {
+            // Get the latest message from the database
+            Message latestMessage = messageService.getLatestMessage();
+
+            // If there's no latest message or no displayed messages yet, skip
+            if (latestMessage == null) {
+                return;
+            }
+
+            // Compare timestamps - if DB has newer messages, refresh
+            if (lastDisplayedMessageTime == null ||
+                    latestMessage.getTimestamp().isAfter(lastDisplayedMessageTime)) {
+
+                // Refresh the messages
+                loadGroupMessages();
+
+                // Auto-scroll to bottom to show new messages
+                SwingUtilities.invokeLater(() -> {
+                    groupMessagesArea.setCaretPosition(groupMessagesArea.getDocument().getLength());
+                });
+            }
+
+        } catch (Exception ex) {
+            // Silently handle errors to avoid disrupting the user experience
+            // You could log this error if you have a logging system
+            System.err.println("Error checking for new messages: " + ex.getMessage());
+        }
+    }
+
+    // Stop the timer when the window is closed
+    public void dispose() {
+        if (messageRefreshTimer != null) {
+            messageRefreshTimer.stop();
+        }
+    }
+
     private void loadTasks() {
         List<TodoTask> tasks = repository.findAll();
         listModel.clear();
         tasks.forEach(listModel::addElement);
     }
 
-    // Render for tasks 
+    // Render for tasks
     private static class TaskCellRenderer extends DefaultListCellRenderer {
         @Override
         public Component getListCellRendererComponent(JList<?> list, Object value, int index,
@@ -250,7 +313,7 @@ public class TodoSplitApp {
         }
     }
 
-    // 
+    //
     private static class LabeledField extends JPanel {
         public LabeledField(String label, JTextField field) {
             super(new BorderLayout(5, 5));

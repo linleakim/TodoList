@@ -8,456 +8,306 @@ import services.MessageService;
 import models.Message;
 
 import javax.swing.*;
+import javax.swing.border.LineBorder;
 import java.awt.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
+// main window
 public class TodoSplitApp {
     private final IRepository repository;
     private final MessageService messageService;
-    private JList<TodoTask> taskList;
-    private DefaultListModel<TodoTask> listModel;
+    private final IUserRepository userRepository;
+    private final String username;
 
-    private JTextField nameField;
-    private JTextField descField;
+    // interface
+    private JFrame frame;
+    private DefaultListModel<TodoTask> listModel;
+    private JList<TodoTask> taskList;
+    private JTextField nameField, descField;
     private JTextArea contentArea;
     private JComboBox<TaskStatus> statusComboBox;
-    private JButton saveButton;
-    private JButton deleteButton;
+    private JButton saveButton, deleteButton;
     private TodoTask currentSelectedTask;
-    private String username;
-    private IUserRepository userRepository;
 
-    // Message components
-    private JTextArea groupMessagesArea;
-    private JTextArea myMessagesArea;
+    // chat
+    private JTextArea groupMessagesArea, myMessagesArea;
     private JButton sendButton;
-
-    // Timer for auto-refresh
     private Timer messageRefreshTimer;
     private LocalDateTime lastDisplayedMessageTime;
 
     public TodoSplitApp(IRepository repository, IUserRepository userRepository, MessageService messageService) {
         this.repository = repository;
-        this.username = repository.getCurrentUser();
         this.userRepository = userRepository;
         this.messageService = messageService;
-        initUI();
+        this.username = repository.getCurrentUser();
+
+        initUI(); // start UI
     }
 
+    // user window
     private void initUI() {
-        JFrame frame = new JFrame("Todo App — user: " + username);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(800, 650);
+        frame = new JFrame("Todo App — user: " + username);
+        frame.setSize(900, 750);
         frame.setLocationRelativeTo(null);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        // note
-        JLabel userLabel = new JLabel("You are logged in as: " + username);
-        frame.add(userLabel, BorderLayout.SOUTH);
+        Color bgColor = new Color(0xF7F3FF); // lila
+        Color textColor = new Color(0x3D3D3D); // black
+        Color buttonYellow = new Color(0xFFD56B);
+        Color buttonPurple = new Color(0xD2A8FF);
 
-        // left panel components
-        nameField = new JTextField();
-        descField = new JTextField();
-        nameField.setEditable(false);
-        descField.setEditable(false);
+        frame.getContentPane().setBackground(bgColor);
 
-        // CREATE STATUS COMBO BOX
-        statusComboBox = new JComboBox<>(TaskStatus.values());
+        // oben mt buttons
+        JButton addButton = createRoundedButton("＋ Make new task", buttonYellow);
+        addButton.addActionListener(e -> new CreateTaskDialog(frame, repository, this::loadTasks).setVisible(true));
 
-        contentArea = new JTextArea(10, 20);
-        contentArea.setLineWrap(true);
-        contentArea.setWrapStyleWord(true);
-        contentArea.setEditable(false);
-
-        // Create save and delete buttons
-        saveButton = new JButton("Save Changes");
-        saveButton.setEnabled(false);
-        saveButton.addActionListener(e -> saveCurrentTask());
-
-        deleteButton = new JButton("Delete Task");
-        deleteButton.setEnabled(false);
-        deleteButton.addActionListener(e -> deleteCurrentTask());
-
-        // right panel components
-        listModel = new DefaultListModel<>();
-        taskList = new JList<>(listModel);
-        taskList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        taskList.setCellRenderer(new TaskCellRenderer());
-
-        // left panel layout
-        JPanel detailPanel = new JPanel(new BorderLayout());
-        JPanel fields = new JPanel(new GridLayout(3, 1, 5, 5));
-
-        // Create individual labeled panels
-        JPanel namePanel = new JPanel(new BorderLayout(5, 5));
-        namePanel.add(new JLabel("Name:"), BorderLayout.WEST);
-        namePanel.add(nameField, BorderLayout.CENTER);
-
-        JPanel descPanel = new JPanel(new BorderLayout(5, 5));
-        descPanel.add(new JLabel("Description:"), BorderLayout.WEST);
-        descPanel.add(descField, BorderLayout.CENTER);
-
-        JPanel statusPanel = new JPanel(new BorderLayout(5, 5));
-        statusPanel.add(new JLabel("Status:"), BorderLayout.WEST);
-        statusPanel.add(statusComboBox, BorderLayout.CENTER);
-
-        fields.add(namePanel);
-        fields.add(descPanel);
-        fields.add(statusPanel);
-
-        JPanel savePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        savePanel.add(saveButton);
-        savePanel.add(deleteButton);
-
-        detailPanel.add(fields, BorderLayout.NORTH);
-        detailPanel.add(new JScrollPane(contentArea), BorderLayout.CENTER);
-        detailPanel.add(savePanel, BorderLayout.SOUTH);
-
-        JScrollPane listScroll = new JScrollPane(taskList);
-
-        // buttons
-        JButton addButton = new JButton("Make new task ");
-        addButton.addActionListener(e -> {
-            new CreateTaskDialog(frame, repository, this::loadTasks).setVisible(true);
-        });
-
-        JButton logoutButton = new JButton("Exit");
+        JButton logoutButton = createRoundedButton("Exit", buttonPurple);
         logoutButton.addActionListener(e -> {
             frame.dispose();
             SwingUtilities.invokeLater(() -> new LoginFrame(userRepository).setVisible(true));
         });
 
-        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+        topPanel.setBackground(bgColor);
         topPanel.add(addButton);
         topPanel.add(logoutButton);
         frame.add(topPanel, BorderLayout.NORTH);
 
-        // between
+        // text field
+        nameField = createRoundedTextField();
+        descField = createRoundedTextField();
+        contentArea = new JTextArea(10, 20);
+        contentArea.setLineWrap(true);
+        contentArea.setWrapStyleWord(true);
+        contentArea.setEditable(false);
+        contentArea.setBorder(BorderFactory.createLineBorder(buttonPurple, 2, true));
+        contentArea.setBackground(bgColor);
+        contentArea.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+
+        statusComboBox = new JComboBox<>(TaskStatus.values());
+        statusComboBox.setRenderer(new StatusRenderer());
+        statusComboBox.setEnabled(false);
+
+        saveButton = createRoundedButton("Save Changes", buttonYellow);
+        saveButton.setEnabled(false);
+        saveButton.addActionListener(e -> saveCurrentTask());
+
+        deleteButton = createRoundedButton("Delete Task", buttonPurple);
+        deleteButton.setEnabled(false);
+        deleteButton.addActionListener(e -> deleteCurrentTask());
+
+        JPanel detailPanel = new JPanel(new BorderLayout());
+        detailPanel.setBackground(bgColor);
+
+        JPanel fields = new JPanel(new GridLayout(4, 1, 5, 5));
+        fields.setBackground(bgColor);
+        fields.add(createLabeledPanel("Name:", nameField, bgColor, textColor));
+        fields.add(createLabeledPanel("Description:", descField, bgColor, textColor));
+        fields.add(createLabeledPanel("Status:", statusComboBox, bgColor, textColor));
+        fields.add(createLabeledPanel("Content:", new JScrollPane(contentArea), bgColor, textColor));
+
+        JPanel savePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        savePanel.setBackground(bgColor);
+        savePanel.add(saveButton);
+        savePanel.add(deleteButton);
+
+        detailPanel.add(fields, BorderLayout.CENTER);
+        detailPanel.add(savePanel, BorderLayout.SOUTH);
+
+        // tasks
+        listModel = new DefaultListModel<>();
+        taskList = new JList<>(listModel);
+        taskList.setCellRenderer(new TaskRenderer());
+        taskList.addListSelectionListener(e -> loadTaskDetails(taskList.getSelectedValue()));
+
+        JScrollPane listScroll = new JScrollPane(taskList);
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, detailPanel, listScroll);
-        splitPane.setDividerLocation(500);
+        splitPane.setDividerLocation(600);
 
-        // Create messaging section
-        JPanel messagingSection = createMessagingSection();
+        JSplitPane verticalSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, splitPane, createMessagePanel(bgColor, textColor, buttonYellow));
+        verticalSplit.setDividerLocation(450);
+        verticalSplit.setResizeWeight(0.7);
 
-        // Create vertical split pane to separate main content from messaging
-        JSplitPane verticalSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, splitPane, messagingSection);
-        verticalSplitPane.setDividerLocation(400);
-        verticalSplitPane.setResizeWeight(0.7);
-
-        frame.add(verticalSplitPane, BorderLayout.CENTER);
-
-        // ADD THE LISTENER AFTER EVERYTHING IS CREATED
-        taskList.addListSelectionListener(e -> {
-            TodoTask selected = taskList.getSelectedValue();
-            if (selected != null) {
-                currentSelectedTask = selected;
-                nameField.setText(selected.getName());
-                descField.setText(selected.getDescription());
-                contentArea.setText(selected.getContent());
-                statusComboBox.setSelectedItem(selected.getStatus());
-
-                // Enable editing
-                nameField.setEditable(true);
-                descField.setEditable(true);
-                contentArea.setEditable(true);
-                saveButton.setEnabled(true);
-                deleteButton.setEnabled(true);
-            } else {
-                currentSelectedTask = null;
-                clearDetailFields();
-                saveButton.setEnabled(false);
-                deleteButton.setEnabled(false);
-            }
-        });
+        frame.add(verticalSplit, BorderLayout.CENTER);
+        frame.setVisible(true);
 
         loadTasks();
         loadGroupMessages();
         startMessageRefreshTimer();
-
-        frame.setVisible(true);
-    }
-
-    // Create the messaging section with Group Messages and My Messages panels
-    private JPanel createMessagingSection() {
-        JPanel messagingPanel = new JPanel(new BorderLayout());
-        messagingPanel.setBorder(BorderFactory.createTitledBorder("Interactive Messages"));
-
-        // Create Group Messages panel (upper panel)
-        JPanel groupMessagesPanel = new JPanel(new BorderLayout());
-        groupMessagesPanel.setBorder(BorderFactory.createTitledBorder("Group Messages"));
-
-        groupMessagesArea = new JTextArea(10, 30);
-        groupMessagesArea.setEditable(false);
-        groupMessagesArea.setLineWrap(true);
-        groupMessagesArea.setWrapStyleWord(true);
-        groupMessagesArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
-
-        JScrollPane groupScrollPane = new JScrollPane(groupMessagesArea);
-        groupScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-        groupScrollPane.setPreferredSize(new Dimension(0, 200));
-
-        groupMessagesPanel.add(groupScrollPane, BorderLayout.CENTER);
-
-        // Create My Messages panel (lower panel)
-        JPanel myMessagesPanel = new JPanel(new BorderLayout());
-        myMessagesPanel.setBorder(BorderFactory.createTitledBorder("My Messages"));
-
-        myMessagesArea = new JTextArea(2, 30);
-        myMessagesArea.setLineWrap(true);
-        myMessagesArea.setWrapStyleWord(true);
-        myMessagesArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
-
-        JScrollPane myScrollPane = new JScrollPane(myMessagesArea);
-        myScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-
-        sendButton = new JButton("Send");
-        sendButton.addActionListener(e -> sendMessage());
-
-        // Create panel for text area and send button
-        JPanel inputPanel = new JPanel(new BorderLayout());
-        inputPanel.add(myScrollPane, BorderLayout.CENTER);
-        inputPanel.add(sendButton, BorderLayout.EAST);
-
-        myMessagesPanel.add(inputPanel, BorderLayout.CENTER);
-
-        // Combine both panels vertically
-        JSplitPane messagesSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, groupMessagesPanel, myMessagesPanel);
-        messagesSplitPane.setDividerLocation(200);
-        messagesSplitPane.setResizeWeight(0.8);
-
-        messagingPanel.add(messagesSplitPane, BorderLayout.CENTER);
-
-        return messagingPanel;
-    }
-
-    // Handle sending messages - delegates to MessageService
-    private void sendMessage() {
-        String messageText = myMessagesArea.getText().trim();
-        if (!messageText.isEmpty()) {
-            try {
-                Message message = messageService.sendMessage(username, messageText);
-
-                // Update UI with the sent message
-                displayMessage(message);
-
-                // Clear input field
-                myMessagesArea.setText("");
-
-                // Scroll to bottom of group messages
-                groupMessagesArea.setCaretPosition(groupMessagesArea.getDocument().getLength());
-
-            } catch (Exception e) {
-                JOptionPane.showMessageDialog(null, "Failed to send message: " + e.getMessage(),
-                        "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        }
-    }
-
-    // Load group messages from MessageService
-    private void loadGroupMessages() {
-        try {
-            List<Message> messages = messageService.getAllMessages();
-            groupMessagesArea.setText(""); // Clear existing messages
-
-            lastDisplayedMessageTime = null; // Reset timestamp tracker
-
-            for (Message message : messages) {
-                displayMessage(message);
-                // Track the latest message timestamp
-                if (lastDisplayedMessageTime == null ||
-                        message.getTimestamp().isAfter(lastDisplayedMessageTime)) {
-                    lastDisplayedMessageTime = message.getTimestamp();
-                }
-            }
-
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(null, "Failed to load messages: " + e.getMessage(),
-                    "Error", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    // Display a single message in the group messages area
-    private void displayMessage(Message message) {
-        String formattedMessage = String.format("[%s] %s: %s%n",
-                message.getFormattedTimestamp(),
-                message.getUsername(),
-                message.getContent());
-        groupMessagesArea.append(formattedMessage);
-
-        // Update the last displayed message time
-        if (lastDisplayedMessageTime == null ||
-                message.getTimestamp().isAfter(lastDisplayedMessageTime)) {
-            lastDisplayedMessageTime = message.getTimestamp();
-        }
-
-        // Limit to 100 rows
-        limitGroupMessagesRows();
-    }
-
-    // Limit group messages to maximum 100 rows
-    private void limitGroupMessagesRows() {
-        String[] lines = groupMessagesArea.getText().split("\n");
-        if (lines.length > 100) {
-            StringBuilder limitedText = new StringBuilder();
-            for (int i = lines.length - 100; i < lines.length; i++) {
-                limitedText.append(lines[i]).append("\n");
-            }
-            groupMessagesArea.setText(limitedText.toString());
-        }
-    }
-
-    // Start the message refresh timer
-    private void startMessageRefreshTimer() {
-        messageRefreshTimer = new Timer(2000, e -> checkForNewMessages()); // 2 seconds interval
-        messageRefreshTimer.start();
-    }
-
-    // Check for new messages and update if needed
-    private void checkForNewMessages() {
-        try {
-            // Get the latest message from the database
-            Message latestMessage = messageService.getLatestMessage();
-
-            // If there's no latest message or no displayed messages yet, skip
-            if (latestMessage == null) {
-                return;
-            }
-
-            // Compare timestamps - if DB has newer messages, refresh
-            if (lastDisplayedMessageTime == null ||
-                    latestMessage.getTimestamp().isAfter(lastDisplayedMessageTime)) {
-
-                // Refresh the messages
-                loadGroupMessages();
-
-                // Auto-scroll to bottom to show new messages
-                SwingUtilities.invokeLater(() -> {
-                    groupMessagesArea.setCaretPosition(groupMessagesArea.getDocument().getLength());
-                });
-            }
-
-        } catch (Exception ex) {
-            // Silently handle errors to avoid disrupting the user experience
-            System.err.println("Error checking for new messages: " + ex.getMessage());
-        }
-    }
-
-    // Save current task changes
-    private void saveCurrentTask() {
-        if (currentSelectedTask == null) return;
-
-        try {
-            // Get values from fields
-            String name = nameField.getText().trim();
-            String description = descField.getText().trim();
-            String content = contentArea.getText().trim();
-            TaskStatus status = (TaskStatus) statusComboBox.getSelectedItem();
-
-            // Validate
-            if (name.isEmpty()) {
-                JOptionPane.showMessageDialog(null, "Task name cannot be empty.",
-                        "Validation Error", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-
-            // Update the task
-            currentSelectedTask.setName(name);
-            currentSelectedTask.setDescription(description);
-            currentSelectedTask.setContent(content);
-            currentSelectedTask.setStatus(status);
-
-            // Save to database
-            repository.update(currentSelectedTask);
-
-            // Refresh the task list to show updated status
-            loadTasks();
-
-            // Show success message
-            JOptionPane.showMessageDialog(null, "Task updated successfully!",
-                    "Success", JOptionPane.INFORMATION_MESSAGE);
-
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(null, "Failed to save task: " + e.getMessage(),
-                    "Error", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    // Delete current task
-    private void deleteCurrentTask() {
-        if (currentSelectedTask == null) return;
-
-        try {
-            // Confirm deletion
-            int result = JOptionPane.showConfirmDialog(
-                    null,
-                    "Are you sure you want to delete the task '" + currentSelectedTask.getName() + "'?\nThis action cannot be undone.",
-                    "Confirm Delete",
-                    JOptionPane.YES_NO_OPTION,
-                    JOptionPane.WARNING_MESSAGE
-            );
-
-            if (result == JOptionPane.YES_OPTION) {
-                // Delete from database
-                repository.remove(currentSelectedTask.getId());
-
-                // Clear the detail fields
-                currentSelectedTask = null;
-                clearDetailFields();
-                saveButton.setEnabled(false);
-                deleteButton.setEnabled(false);
-
-                // Refresh the task list
-                loadTasks();
-
-                // Show success message
-                JOptionPane.showMessageDialog(null, "Task deleted successfully!",
-                        "Success", JOptionPane.INFORMATION_MESSAGE);
-            }
-
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(null, "Failed to delete task: " + e.getMessage(),
-                    "Error", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    // Clear detail fields
-    private void clearDetailFields() {
-        nameField.setText("");
-        descField.setText("");
-        contentArea.setText("");
-        if (statusComboBox != null) {
-            statusComboBox.setSelectedItem(TaskStatus.NOT_STARTED);
-        }
-
-        // Disable editing
-        nameField.setEditable(false);
-        descField.setEditable(false);
-        contentArea.setEditable(false);
     }
 
     private void loadTasks() {
-        List<TodoTask> tasks = repository.findAll();
         listModel.clear();
-        tasks.forEach(listModel::addElement);
+        for (TodoTask task : repository.findAll()) listModel.addElement(task);
     }
 
-    // Stop the timer when the window is closed (good practice)
-    public void dispose() {
-        if (messageRefreshTimer != null) {
-            messageRefreshTimer.stop();
+    private void loadTaskDetails(TodoTask task) {
+        if (task == null) return;
+
+        currentSelectedTask = task;
+        nameField.setText(task.getName());
+        descField.setText(task.getDescription());
+        contentArea.setText(task.getContent());
+        statusComboBox.setSelectedItem(task.getStatus());
+
+        nameField.setEditable(true);
+        descField.setEditable(true);
+        contentArea.setEditable(true);
+        statusComboBox.setEnabled(true);
+        saveButton.setEnabled(true);
+        deleteButton.setEnabled(true);
+    }
+
+    private void saveCurrentTask() {
+        if (currentSelectedTask == null) return;
+
+        String name = nameField.getText().trim();
+        if (name.isEmpty()) {
+            JOptionPane.showMessageDialog(frame, "Name can't be empty");
+            return;
+        }
+
+        currentSelectedTask.setName(name);
+        currentSelectedTask.setDescription(descField.getText().trim());
+        currentSelectedTask.setContent(contentArea.getText().trim());
+        currentSelectedTask.setStatus((TaskStatus) statusComboBox.getSelectedItem());
+
+        repository.update(currentSelectedTask);
+        loadTasks();
+    }
+
+    private void deleteCurrentTask() {
+        if (currentSelectedTask == null) return;
+        int confirm = JOptionPane.showConfirmDialog(frame, "Delete this task?", "Confirm", JOptionPane.YES_NO_OPTION);
+        if (confirm == JOptionPane.YES_OPTION) {
+            repository.remove(currentSelectedTask.getId());
+            currentSelectedTask = null;
+            loadTasks();
         }
     }
 
-    // Render for tasks
-    private static class TaskCellRenderer extends DefaultListCellRenderer {
+    private JPanel createMessagePanel(Color bgColor, Color textColor, Color buttonColor) {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(bgColor);
+        panel.setBorder(BorderFactory.createTitledBorder("Messages"));
+
+        groupMessagesArea = new JTextArea();
+        groupMessagesArea.setEditable(false);
+        groupMessagesArea.setBackground(bgColor);
+
+        myMessagesArea = new JTextArea(3, 30);
+        JScrollPane scroll = new JScrollPane(groupMessagesArea);
+
+        sendButton = createRoundedButton("Send", buttonColor);
+        sendButton.addActionListener(e -> sendMessage());
+
+        JPanel input = new JPanel(new BorderLayout());
+        input.add(new JScrollPane(myMessagesArea), BorderLayout.CENTER);
+        input.add(sendButton, BorderLayout.EAST);
+
+        panel.add(scroll, BorderLayout.CENTER);
+        panel.add(input, BorderLayout.SOUTH);
+        return panel;
+    }
+
+    private void sendMessage() {
+        String text = myMessagesArea.getText().trim();
+        if (text.isEmpty()) return;
+
+        Message msg = messageService.sendMessage(username, text);
+        displayMessage(msg);
+        myMessagesArea.setText("");
+    }
+
+    private void loadGroupMessages() {
+        groupMessagesArea.setText("");
+        List<Message> messages = messageService.getAllMessages();
+        for (Message msg : messages) displayMessage(msg);
+    }
+
+    private void displayMessage(Message msg) {
+        groupMessagesArea.append(String.format("[%s] %s: %s\n",
+                msg.getFormattedTimestamp(), msg.getUsername(), msg.getContent()));
+    }
+
+    private void startMessageRefreshTimer() {
+        messageRefreshTimer = new Timer(2000, e -> checkForNewMessages());
+        messageRefreshTimer.start();
+    }
+
+    private void checkForNewMessages() {
+        Message latest = messageService.getLatestMessage();
+        if (latest != null && (lastDisplayedMessageTime == null || latest.getTimestamp().isAfter(lastDisplayedMessageTime))) {
+            loadGroupMessages();
+            lastDisplayedMessageTime = latest.getTimestamp();
+        }
+    }
+
+    private JTextField createRoundedTextField() {
+        JTextField field = new JTextField();
+        field.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(0xD2A8FF), 2, true),
+                BorderFactory.createEmptyBorder(5, 10, 5, 10)));
+        field.setBackground(new Color(0xF7F3FF));
+        field.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        return field;
+    }
+
+    private JButton createRoundedButton(String text, Color bgColor) {
+        JButton button = new JButton(text);
+        button.setBackground(bgColor);
+        button.setForeground(Color.BLACK);
+        button.setBorder(BorderFactory.createLineBorder(bgColor.darker(), 2, true));
+        button.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        button.setOpaque(true);
+        return button;
+    }
+
+    private JPanel createLabeledPanel(String labelText, Component comp, Color bg, Color fg) {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(bg);
+        JLabel label = new JLabel(labelText);
+        label.setForeground(fg);
+        panel.add(label, BorderLayout.WEST);
+        panel.add(comp, BorderLayout.CENTER);
+        return panel;
+    }
+
+    // Рендер для статусів у комбобоксі
+    private static class StatusRenderer extends JLabel implements ListCellRenderer<TaskStatus> {
+        public StatusRenderer() {
+            setOpaque(true);
+        }
+
         @Override
-        public Component getListCellRendererComponent(JList<?> list, Object value, int index,
-                                                      boolean isSelected, boolean cellHasFocus) {
-            if (value instanceof TodoTask task) {
-                // Use the toString() method which includes status
-                value = task.toString(); // This will show "Task Name [Status]"
+        public Component getListCellRendererComponent(JList<? extends TaskStatus> list, TaskStatus value, int index, boolean isSelected, boolean cellHasFocus) {
+            setText(value.getDisplayName());
+            switch (value) {
+                case NOT_STARTED -> setBackground(new Color(0xF1948A));
+                case IN_PROGRESS -> setBackground(new Color(0x85C1E9));
+                case FINISHED -> setBackground(new Color(0x82E0AA));
             }
-            return super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+            return this;
+        }
+    }
+
+    // colors with status
+    private static class TaskRenderer extends DefaultListCellRenderer {
+        @Override
+        public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+            JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+            if (value instanceof TodoTask task) {
+                label.setText(task.getName() + " [" + task.getStatus().getDisplayName() + "]");
+                switch (task.getStatus()) {
+                    case NOT_STARTED -> label.setForeground(new Color(255, 100, 100));
+                    case IN_PROGRESS -> label.setForeground(new Color(100, 150, 255));
+                    case FINISHED -> label.setForeground(new Color(100, 220, 100));
+                }
+            }
+            return label;
         }
     }
 }

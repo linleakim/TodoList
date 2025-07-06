@@ -8,46 +8,44 @@ import javax.swing.*;
 import java.awt.*;
 
 public class CreateTaskDialog extends JDialog {
-
     private final IRepository repository;
     private final Runnable onTaskCreatedCallback;
 
     public CreateTaskDialog(JFrame parent, IRepository repository, Runnable onTaskCreatedCallback) {
-        super(parent, "New task", true);
+        super(parent, "New Task", true);
         this.repository = repository;
         this.onTaskCreatedCallback = onTaskCreatedCallback;
-
         initUI();
     }
 
     private void initUI() {
-        JPanel panel = new JPanel(new GridLayout(5, 2, 10, 10)); // NEW: Changed from 4 to 5 rows
+        JPanel panel = new JPanel(new GridLayout(5, 2, 10, 10));
+        panel.setBackground(new Color(247, 243, 255));
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
         JTextField nameField = new JTextField();
         JTextField descField = new JTextField();
         JTextArea contentArea = new JTextArea(5, 20);
+        JScrollPane scroll = new JScrollPane(contentArea);
 
-        // NEW: Status field (read-only for new tasks)
         JTextField statusField = new JTextField(TaskStatus.NOT_STARTED.getDisplayName());
         statusField.setEditable(false);
-        statusField.setBackground(Color.LIGHT_GRAY);
+        statusField.setBackground(new Color(230, 230, 230));
 
         panel.add(new JLabel("Name:"));
         panel.add(nameField);
-        panel.add(new JLabel("Description:")); // Fixed typo
+        panel.add(new JLabel("Description:"));
         panel.add(descField);
         panel.add(new JLabel("Content:"));
-
-        JScrollPane scroll = new JScrollPane(contentArea);
         panel.add(scroll);
-
-        // NEW: Add status field
         panel.add(new JLabel("Status:"));
         panel.add(statusField);
 
-        JButton createButton = new JButton("New");
-        JButton cancelButton = new JButton("Cancel");
+        JButton createButton = createStyledButton("Create", new Color(255, 230, 120));
+        JButton cancelButton = createStyledButton("Cancel", new Color(200, 180, 255));
 
         JPanel buttonPanel = new JPanel();
+        buttonPanel.setBackground(new Color(247, 243, 255));
         buttonPanel.add(createButton);
         buttonPanel.add(cancelButton);
 
@@ -61,11 +59,10 @@ public class CreateTaskDialog extends JDialog {
                 return;
             }
 
-            TodoTask task = new TodoTask(name, desc, content); // Status defaults to NOT_STARTED
+            TodoTask task = new TodoTask(name, desc, content);
             repository.add(task);
 
-            if (onTaskCreatedCallback != null)
-                onTaskCreatedCallback.run();
+            if (onTaskCreatedCallback != null) onTaskCreatedCallback.run();
 
             dispose();
         });
@@ -75,7 +72,18 @@ public class CreateTaskDialog extends JDialog {
         getContentPane().add(panel, BorderLayout.CENTER);
         getContentPane().add(buttonPanel, BorderLayout.SOUTH);
 
-        setSize(400, 350); // NEW: Increased height for status field
+        setSize(400, 350);
         setLocationRelativeTo(getParent());
+    }
+
+    private JButton createStyledButton(String text, Color bgColor) {
+        JButton button = new JButton(text);
+        button.setBackground(bgColor);
+        button.setFocusPainted(false);
+        button.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        button.setBorder(BorderFactory.createLineBorder(bgColor.darker(), 2, true));
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        button.setOpaque(true);
+        return button;
     }
 }

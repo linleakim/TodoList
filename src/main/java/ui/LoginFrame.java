@@ -1,16 +1,12 @@
 package ui;
 
-import dal.IRepository;
-import dal.IUserRepository;
-import dal.MongoRepository;
-import dal.IMessageRepository;
-import dal.MongoMessageRepository;
+import dal.*;
 import services.MessageService;
 
 import javax.swing.*;
+import java.awt.*;
 
 public class LoginFrame extends JFrame {
-
     private final IUserRepository userRepo;
 
     public LoginFrame(IUserRepository userRepo) {
@@ -19,49 +15,64 @@ public class LoginFrame extends JFrame {
     }
 
     private void initUI() {
-        setTitle("Login ");
-        setSize(300, 200);
+        setTitle("Login");
+        setSize(320, 220);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
+        // creating elements
         JTextField usernameField = new JTextField();
         JPasswordField passwordField = new JPasswordField();
-        JButton loginButton = new JButton("Login ");
-        JButton registerButton = new JButton("Registation");
+        JButton loginButton = createStyledButton("Login", new Color(255, 230, 120));
+        JButton registerButton = createStyledButton("Register", new Color(200, 180, 255));
 
+        // Panel
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBackground(new Color(247, 243, 255)); // лавандовий фон
+        panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
-        panel.add(new JLabel("username:"));
+        panel.add(new JLabel("Username:"));
         panel.add(usernameField);
-        panel.add(new JLabel("password:"));
+        panel.add(Box.createVerticalStrut(10));
+        panel.add(new JLabel("Password:"));
         panel.add(passwordField);
+        panel.add(Box.createVerticalStrut(10));
         panel.add(loginButton);
+        panel.add(Box.createVerticalStrut(5));
         panel.add(registerButton);
 
+        // Button Login
         loginButton.addActionListener(e -> {
-            String user = usernameField.getText();
-            String pass = new String(passwordField.getPassword());
+            String username = usernameField.getText();
+            String password = new String(passwordField.getPassword());
 
-            if (userRepo.login(user, pass)) {
+            if (userRepo.login(username, password)) {
                 dispose();
+                IRepository todoRepo = new MongoRepository(username);
+                IMessageRepository messageRepo = new MongoMessageRepository();
+                MessageService messageService = new MessageService(messageRepo);
 
-                // Create repositories
-                IRepository todoRepo = new MongoRepository(user); // main todo repository
-                IMessageRepository messageRepo = new MongoMessageRepository(); // NEW: message repository
-
-                // Create message service
-                MessageService messageService = new MessageService(messageRepo); // NEW: message service
-
-                // Open main window with messaging support
-                new TodoSplitApp(todoRepo, userRepo, messageService); // UPDATED: added messageService parameter
+                SwingUtilities.invokeLater(() -> new TodoSplitApp(todoRepo, userRepo, messageService));
             } else {
-                JOptionPane.showMessageDialog(this, "wrong username or password ");
+                JOptionPane.showMessageDialog(this, "Wrong username or password", "Login Failed", JOptionPane.ERROR_MESSAGE);
             }
         });
 
+        // Button Register
         registerButton.addActionListener(e -> new RegisterDialog(this, userRepo).setVisible(true));
 
         add(panel);
+    }
+
+    private JButton createStyledButton(String text, Color bgColor) {
+        JButton button = new JButton(text);
+        button.setBackground(bgColor);
+        button.setFocusPainted(false);
+        button.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        button.setBorder(BorderFactory.createLineBorder(bgColor.darker(), 2, true));
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        button.setOpaque(true);
+        return button;
     }
 }

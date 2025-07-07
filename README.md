@@ -1,9 +1,9 @@
 # Todo App - Enddokumentation
 
 ## Authors
-- Linlea - Documentation (README, UML), Chat Function, Task Status Infomation, Edit/Delete Task Function
-- Sofiia - Java GUI code
-- Kateryna - Java Logic code
+- Linlea - Chat Function, Task Status Information, Edit/Delete Task Function, Documentation (README, UML)
+- Sofiia - Entwicklung einer grafischen Benutzeroberfläche GUI, Individuelles Design, Verbindung zum Daten-Repository
+- Kateryna - App verbindung mit Mongodb, entwicklung der todotask Klasse
 
 ## Kurze Zusammenfassung des Programms und dessen Funktionalität
 
@@ -31,108 +31,94 @@ Die entwickelte Anwendung ist eine **Client-Server-basierte Todo-Applikation** m
 
 ## Übersicht über die einzelnen Schritte bei der Programmentwicklung
 
-### 1. Projektplanung und Architektur-Design
-- **Entscheidung für das Repository-Pattern** zur Trennung von Datenlogik und Geschäftslogik
-- **Wahl von MongoDB** als flexible NoSQL-Datenbank für die Persistierung
-- **Definition der Hauptkomponenten:** User Management, Task Management, Messaging
-- **Festlegung der Package-Struktur:** `dal` (Data Access Layer), `ui` (User Interface), `models`, `services`
+### 1. Projekt-Setup und Package-Struktur
+**Erstellt wurden folgende Packages:**
+- **`dal` (Data Access Layer)** - Für alle datenbankbezogenen Klassen
+- **`ui` (User Interface)** - Für alle GUI-Komponenten
+- **`models`** - Für Datenmodelle (Message, etc.)
+- **`services`** - Für Geschäftslogik
+- **`org.example`** - Main-Package mit der `App.java` als Startpunkt
 
-### 2. Datenschicht-Entwicklung (DAL)
-- **Interface-Design:** Erstellung von abstrakten Interfaces (`IRepository`, `IUserRepository`, `IMessageRepository`)
-- **MongoDB-Integration:** Implementierung der konkreten Repository-Klassen
-- **Datenmodelle:** Entwicklung der Entitäten (`TodoTask`, `Message`, `TaskStatus`)
-- **Datenbankverbindung:** Konfiguration der MongoDB-Verbindung (localhost:27017)
+**Erste Datei:** `App.java` im Package `org.example` mit der main-Methode zur Anwendungsinitialisierung
 
-### 3. Geschäftslogik (Services)
-- **MessageService:** Entwicklung der Messaging-Logik mit automatischer Nachrichtenbereinigung
-- **Benutzerauthentifizierung:** Implementierung von Login/Register-Funktionalität
-- **Task-Verwaltung:** CRUD-Operationen für Aufgaben mit Benutzerfilterung
+### 2. Datenmodelle und Enums erstellen
+**Entwickelt wurden:**
+- **`TaskStatus.java`** im `dal` Package - Enum mit drei Zuständen (NOT_STARTED, IN_PROGRESS, FINISHED)
+- **`TodoTask.java`** im `dal` Package - Hauptdatenmodell für Aufgaben mit ObjectId, Name, Beschreibung, Content und Status
+- **`Message.java`** im `models` Package - Datenmodell für Chat-Nachrichten mit Zeitstempel
+- **`TodoTaskInfo.java`** im `dal` Package - Hilfsdatenklasse (aktuell leer)
 
-### 4. Benutzeroberfläche (UI)
-- **LoginFrame:** Anmelde- und Registrierungsmaske
-- **TodoSplitApp:** Hauptanwendungsfenster mit geteilter Ansicht
-- **CreateTaskDialog:** Dialog für neue Aufgabenerstellung
-- **Design-System:** Einheitliches Farbschema und Styling
+### 3. Repository-Interfaces definieren
+**Erstellung der abstrakten Schnittstellen:**
+- **`IRepository.java`** - Basis-Interface für Todo-CRUD-Operationen
+- **`IUserRepository.java`** - Interface für Benutzeranmeldung (register/login)
+- **`IMessageRepository.java`** - Interface für Message-Verwaltung mit erweiterten Funktionen
 
-### 5. Integration und Testing
-- **Komponentenintegration:** Verbindung aller Schichten
-- **Benutzertest:** Überprüfung der Benutzerfreundlichkeit
-- **Datenbanktest:** Validierung der Persistierung
-- **Messaging-Test:** Echtzeitfunktionalität prüfen
+### 4. MongoDB-Repository-Implementierungen
+**Konkrete Datenschicht-Implementierungen:**
+- **`MongoRepository.java`** - Implementiert `IRepository`, verbindet sich mit MongoDB-Collection "Todo", filtert Tasks nach Username
+- **`MongoUserRepository.java`** - Implementiert `IUserRepository`, verwaltet "Users"-Collection mit einfacher Passwort-Authentifizierung
+- **`MongoMessageRepository.java`** - Implementiert `IMessageRepository`, verwaltet "Messages"-Collection mit LocalDateTime-zu-Date-Konvertierung
 
-### 6. Optimierung und Finalisierung
-- **Performance-Optimierung:** Timer für Nachrichtenaktualisierung
-- **UI-Verbesserungen:** Responsive Design und Farbkodierung
-- **Fehlerbehandlung:** Validierung und Benutzerrückmeldungen
-- **Code-Dokumentation:** Kommentare und Strukturierung
+**Datenbankanbindung:** Alle Repository-Klassen verwenden `mongodb://localhost:27017` und die Datenbank "ToDoApp"
+
+### 5. Service-Layer entwickeln
+**Geschäftslogik-Komponenten:**
+- **`MessageService.java`** im `services` Package - Wrapper um `IMessageRepository` mit zusätzlicher Logik für Nachrichtenbereinigung und -abruf
+
+### 6. Benutzeroberfläche implementieren
+**UI-Komponenten im `ui` Package:**
+- **`LoginFrame.java`** - Hauptanmeldefenster mit Username/Passwort-Feldern und Styling
+- **`RegisterDialog.java`** - Modal-Dialog für Neuregistrierung von Benutzern
+- **`CreateTaskDialog.java`** - Modal-Dialog zum Erstellen neuer Aufgaben mit allen Feldern
+- **`TodoSplitApp.java`** - Hauptanwendungsfenster mit geteilter Ansicht (Tasks links, Details rechts, Chat unten)
+
+**UI-Features implementiert:**
+- Custom-Styling mit `createRoundedButton()` und `createRoundedTextField()` Methoden
+- Farbschema mit `Color(0xF7F3FF)` (Lavendel) als Hauptfarbe
+- `StatusRenderer` und `TaskRenderer` Klassen für farbkodierte Darstellung
+
+### 7. Anwendungsintegration und Datenfluss
+**Verbindung der Komponenten:**
+- `App.java` startet `LoginFrame` mit `MongoUserRepository`
+- Nach erfolgreichem Login wird `TodoSplitApp` mit `MongoRepository`, `MongoMessageRepository` und `MessageService` gestartet
+- Timer-basierte Nachrichtenaktualisierung alle 2 Sekunden in `TodoSplitApp`
+
+**Datenfluss:** UI → Service → Repository → MongoDB → Repositor
 
 ## Schwierigkeiten bei der Entwicklung
 
-### 1. MongoDB-Datentyp-Konvertierung
-**Problem:** Java `LocalDateTime` ist nicht direkt mit MongoDB kompatibel.
-**Lösung:** Implementierung von Konvertierungsmethoden in `MongoMessageRepository` zwischen `LocalDateTime` und `Date`:
-```java
-// Convert LocalDateTime to Date for MongoDB storage
-Date timestamp = Date.from(message.getTimestamp().atZone(ZoneId.systemDefault()).toInstant());
-```
-
-### 2. Echtzeit-Messaging ohne WebSocket
-**Problem:** Echtzeitaktualisierung von Nachrichten ohne komplexe WebSocket-Implementierung.
-**Lösung:** Timer-basierte Lösung mit 2-Sekunden-Intervall und Vergleich der letzten Nachrichtenzeit:
+### 1. Nachrichten-Timer
+**Problem:** Echtzeit-Messaging ohne komplexe WebSocket-Implementierung realisieren.
+**Lösung:** Timer mit 2-Sekunden-Intervall und Zeitstempel-Vergleich:
 ```java
 private void checkForNewMessages() {
     Message latest = messageService.getLatestMessage();
-    if (latest != null && (lastDisplayedMessageTime == null || 
-        latest.getTimestamp().isAfter(lastDisplayedMessageTime))) {
+    if (latest != null && latest.getTimestamp().isAfter(lastDisplayedMessageTime)) {
         loadGroupMessages();
-        lastDisplayedMessageTime = latest.getTimestamp();
     }
 }
 ```
 
-### 3. Benutzerspezifische Datenfilterung
-**Problem:** Sicherstellen, dass Benutzer nur ihre eigenen Tasks sehen und bearbeiten können.
-**Lösung:** Implementierung von Username-basierter Filterung in allen Repository-Operationen:
-```java
-public List<TodoTask> findAll() {
-    var cursor = getTodoCollection().find(eq("username", username));
-    // ...
-}
-```
-
-### 4. UI-Responsivität und State-Management
-**Problem:** Synchronisation zwischen UI-Elementen und Datenaktualisierung.
-**Lösung:** Callback-basierte Aktualisierung und zentrale State-Verwaltung im `TodoSplitApp`:
-```java
-private void loadTasks() {
-    listModel.clear();
-    for (TodoTask task : repository.findAll()) listModel.addElement(task);
-}
-```
-
-### 5. Enum-Persistierung in MongoDB
-**Problem:** `TaskStatus` Enum-Werte korrekt in MongoDB speichern und laden.
-**Lösung:** String-basierte Speicherung mit Konvertierungsmethoden:
-```java
-public static TaskStatus fromString(String status) {
-    for (TaskStatus taskStatus : TaskStatus.values()) {
-        if (taskStatus.displayName.equals(status)) {
-            return taskStatus;
-        }
-    }
-    return NOT_STARTED; // Default fallback
-}
-```
-
-### 6. Swing UI-Styling
+### 2. GUI-Styling
 **Problem:** Moderne Optik mit Standard-Swing-Komponenten erreichen.
-**Lösung:** Custom-Styling mit abgerundeten Borders und Farbschemas:
+**Lösung:** Custom-Styling-Methoden mit abgerundeten Borders:
 ```java
 private JButton createRoundedButton(String text, Color bgColor) {
-    JButton button = new JButton(text);
     button.setBorder(BorderFactory.createLineBorder(bgColor.darker(), 2, true));
-    // ...
 }
+```
+
+### 3. Arbeit mit MongoDB
+**Problem:** Java `LocalDateTime` und Enum-Werte sind nicht direkt MongoDB-kompatibel.
+**Lösung:** Konvertierungsmethoden zwischen Java-Typen und MongoDB-Dokumenten:
+```java
+// LocalDateTime zu Date
+Date timestamp = Date.from(message.getTimestamp().atZone(ZoneId.systemDefault()).toInstant());
+
+// Enum zu String
+doc.append("status", task.getStatus().getDisplayName());
 ```
 
 ## UML-Klassendiagramm
+![image](https://github.com/user-attachments/assets/dbaca796-3e05-4cb3-a8eb-7c57383d3452)

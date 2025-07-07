@@ -37,7 +37,7 @@ public class TodoSplitApp {
     private LocalDateTime lastDisplayedMessageTime;
 
     public TodoSplitApp(IRepository repository, IUserRepository userRepository, MessageService messageService) {
-        this.repository = repository;
+        this.repository = repository;// save repository 
         this.userRepository = userRepository;
         this.messageService = messageService;
         this.username = repository.getCurrentUser();
@@ -232,8 +232,8 @@ public class TodoSplitApp {
                 msg.getFormattedTimestamp(), msg.getUsername(), msg.getContent()));
     }
 
-    private void startMessageRefreshTimer() {
-        messageRefreshTimer = new Timer(2000, e -> checkForNewMessages());
+    private void startMessageRefreshTimer() {// timer 
+        messageRefreshTimer = new Timer(2000, e -> checkForNewMessages()); // je 2 Sekunden 
         messageRefreshTimer.start();
     }
 
@@ -276,7 +276,7 @@ public class TodoSplitApp {
         return panel;
     }
 
-    // Рендер для статусів у комбобоксі
+    // status render 
     private static class StatusRenderer extends JLabel implements ListCellRenderer<TaskStatus> {
         public StatusRenderer() {
             setOpaque(true);

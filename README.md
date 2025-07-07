@@ -1,138 +1,138 @@
-# Todo-Anwendung
-
-Eine Java Swing-basierte Desktop-Todo-Anwendung mit Benutzerauthentifizierung und MongoDB-Integration. Diese Anwendung ermöglicht es Benutzern, Konten zu erstellen, sich anzumelden und ihre persönlichen Todo-Aufgaben mit vollständigen CRUD-Operationen zu verwalten.
+# Todo App - Enddokumentation
 
 ## Authors
 - Linlea - Documentation (README, UML), Chat Function, Task Status Infomation, Edit/Delete Task Function
 - Sofiia - Java GUI code
 - Kateryna - Java Logic code
 
-## Funktionen
+## Kurze Zusammenfassung des Programms und dessen Funktionalität
 
-### 🔐 Benutzerauthentifizierung
-- **Benutzerregistrierung**: Erstellen neuer Benutzerkonten mit Benutzername und Passwort
-- **Benutzeranmeldung**: Sicheres Anmeldesystem mit Anmeldedatenvalidierung
-- **Sitzungsverwaltung**: Benutzerspezifische Aufgabenverwaltung nach der Authentifizierung
+Die entwickelte Anwendung ist eine **Client-Server-basierte Todo-Applikation** mit integriertem Messaging-System. Das Programm ermöglicht es Benutzern, sich zu registrieren, anzumelden und ihre persönlichen Aufgaben zu verwalten, während sie gleichzeitig über ein Gruppenchat-System kommunizieren können.
 
-### 📝 Aufgabenverwaltung
-- **Aufgaben erstellen**: Neue Todo-Aufgaben mit Name, Beschreibung und Inhalt hinzufügen
-- **Aufgaben anzeigen**: Alle Aufgaben für den aktuellen Benutzer anzeigen
-- **Benutzerisolierung**: Jeder Benutzer kann nur seine eigenen Aufgaben sehen und verwalten
+### Hauptfunktionalitäten:
 
-### 💬 Chat-Funktionalität
-- **Gruppennachrichten**: Anzeige von Gruppenchat-Nachrichten in einem eigenen Bereich
-- **Nachrichten senden**: Eigene Nachrichten mit Zeitstempel an die Gruppe senden
-- **Nachrichtenverlauf**: Automatische Begrenzung auf maximal 100 Nachrichten
-- **Benutzeridentifikation**: Nachrichten werden mit Benutzername und Zeitstempel angezeigt
+**Benutzerverwaltung:**
+- Benutzerregistrierung mit Username und Passwort
+- Sichere Anmeldung mit Authentifizierung
+- Benutzerspezifische Datenspeicherung
 
-### 💾 Datenpersistierung
-- **MongoDB-Integration**: Alle Daten werden in einer MongoDB-Datenbank gespeichert
-- **Benutzerspezifische Daten**: Aufgaben werden einzelnen Benutzern zugeordnet
-- **Persistente Speicherung**: Daten überleben Anwendungsneustarts
+**Task-Management:**
+- Erstellen, Bearbeiten und Löschen von Aufgaben
+- Jede Aufgabe enthält: Name, Beschreibung, Inhalt und Status
+- Drei Statusoptionen: "Not started", "In progress", "Finished"
+- Farbkodierte Darstellung der Aufgaben nach Status
+- Nur der Aufgabenersteller kann seine eigenen Tasks bearbeiten
 
-## Architektur
+**Messaging-System:**
+- Echtzeit-Gruppenchat für alle angemeldeten Benutzer
+- Automatische Nachrichtenaktualisierung alle 2 Sekunden
+- Persistente Nachrichtenspeicherung mit Zeitstempel
+- Automatische Bereinigung alter Nachrichten
 
-### Datenzugriffsschicht (DAL)
-Die Anwendung folgt einem Repository-Pattern mit klarer Trennung der Verantwortlichkeiten:
+## Übersicht über die einzelnen Schritte bei der Programmentwicklung
 
-- **`IRepository`**: Schnittstelle zur Definition der wichtigsten Todo-Operationen
-- **`IUserRepository`**: Schnittstelle für Benutzerauthentifizierungsoperationen
-- **`MongoRepository`**: MongoDB-Implementierung für Todo-Operationen
-- **`MongoUserRepository`**: MongoDB-Implementierung für Benutzeroperationen
-- **`TodoTask`**: Entity-Klasse, die eine Todo-Aufgabe repräsentiert
+### 1. Projektplanung und Architektur-Design
+- **Entscheidung für das Repository-Pattern** zur Trennung von Datenlogik und Geschäftslogik
+- **Wahl von MongoDB** als flexible NoSQL-Datenbank für die Persistierung
+- **Definition der Hauptkomponenten:** User Management, Task Management, Messaging
+- **Festlegung der Package-Struktur:** `dal` (Data Access Layer), `ui` (User Interface), `models`, `services`
 
-### Benutzeroberfläche (UI)
-Desktop-Anwendung mit Java Swing:
+### 2. Datenschicht-Entwicklung (DAL)
+- **Interface-Design:** Erstellung von abstrakten Interfaces (`IRepository`, `IUserRepository`, `IMessageRepository`)
+- **MongoDB-Integration:** Implementierung der konkreten Repository-Klassen
+- **Datenmodelle:** Entwicklung der Entitäten (`TodoTask`, `Message`, `TaskStatus`)
+- **Datenbankverbindung:** Konfiguration der MongoDB-Verbindung (localhost:27017)
 
-- **`LoginFrame`**: Hauptanmeldefenster für Benutzerauthentifizierung
-- **`RegisterDialog`**: Benutzerregistrierungsdialog
-- **`TodoSplitApp`**: Hauptanwendungsfenster für Aufgabenverwaltung und Chat-Funktionalität
-- **`CreateTaskDialog`**: Dialog zum Erstellen neuer Aufgaben
+### 3. Geschäftslogik (Services)
+- **MessageService:** Entwicklung der Messaging-Logik mit automatischer Nachrichtenbereinigung
+- **Benutzerauthentifizierung:** Implementierung von Login/Register-Funktionalität
+- **Task-Verwaltung:** CRUD-Operationen für Aufgaben mit Benutzerfilterung
 
-### Anwendungseinstiegspunkt
-- **`App`**: Hauptklasse, die die Anwendung initialisiert und den Anmeldebildschirm anzeigt
+### 4. Benutzeroberfläche (UI)
+- **LoginFrame:** Anmelde- und Registrierungsmaske
+- **TodoSplitApp:** Hauptanwendungsfenster mit geteilter Ansicht
+- **CreateTaskDialog:** Dialog für neue Aufgabenerstellung
+- **Design-System:** Einheitliches Farbschema und Styling
 
-## UML-Diagramm
+### 5. Integration und Testing
+- **Komponentenintegration:** Verbindung aller Schichten
+- **Benutzertest:** Überprüfung der Benutzerfreundlichkeit
+- **Datenbanktest:** Validierung der Persistierung
+- **Messaging-Test:** Echtzeitfunktionalität prüfen
 
-![image](https://github.com/user-attachments/assets/2e3f87d0-b79d-4a6b-a953-0b358599cdf6)
+### 6. Optimierung und Finalisierung
+- **Performance-Optimierung:** Timer für Nachrichtenaktualisierung
+- **UI-Verbesserungen:** Responsive Design und Farbkodierung
+- **Fehlerbehandlung:** Validierung und Benutzerrückmeldungen
+- **Code-Dokumentation:** Kommentare und Strukturierung
 
-*Das UML-Diagramm zeigt die Beziehung zwischen der Datenzugriffsschicht, den Benutzeroberflächenkomponenten und der Hauptanwendungsstruktur.*
+## Schwierigkeiten bei der Entwicklung
 
-## Technologie-Stack
+### 1. MongoDB-Datentyp-Konvertierung
+**Problem:** Java `LocalDateTime` ist nicht direkt mit MongoDB kompatibel.
+**Lösung:** Implementierung von Konvertierungsmethoden in `MongoMessageRepository` zwischen `LocalDateTime` und `Date`:
+```java
+// Convert LocalDateTime to Date for MongoDB storage
+Date timestamp = Date.from(message.getTimestamp().atZone(ZoneId.systemDefault()).toInstant());
+```
 
-- **Java**: Kernprogrammiersprache
-- **Java Swing**: GUI-Framework für Desktop-Schnittstelle
-- **MongoDB**: NoSQL-Datenbank für Datenspeicherung
-- **MongoDB Java Driver**: Datenbankverbindung
-- **JUnit**: Test-Framework
-
-## Datenbankschema
-
-### Collections
-
-#### Users Collection
-```json
-{
-  "_id": ObjectId,
-  "username": String,
-  "password": String
+### 2. Echtzeit-Messaging ohne WebSocket
+**Problem:** Echtzeitaktualisierung von Nachrichten ohne komplexe WebSocket-Implementierung.
+**Lösung:** Timer-basierte Lösung mit 2-Sekunden-Intervall und Vergleich der letzten Nachrichtenzeit:
+```java
+private void checkForNewMessages() {
+    Message latest = messageService.getLatestMessage();
+    if (latest != null && (lastDisplayedMessageTime == null || 
+        latest.getTimestamp().isAfter(lastDisplayedMessageTime))) {
+        loadGroupMessages();
+        lastDisplayedMessageTime = latest.getTimestamp();
+    }
 }
 ```
 
-#### Todo Collection
-```json
-{
-  "_id": ObjectId,
-  "username": String,
-  "name": String,
-  "description": String,
-  "content": String
+### 3. Benutzerspezifische Datenfilterung
+**Problem:** Sicherstellen, dass Benutzer nur ihre eigenen Tasks sehen und bearbeiten können.
+**Lösung:** Implementierung von Username-basierter Filterung in allen Repository-Operationen:
+```java
+public List<TodoTask> findAll() {
+    var cursor = getTodoCollection().find(eq("username", username));
+    // ...
 }
 ```
 
-## Setup und Installation
-
-### Voraussetzungen
-- Java 8 oder höher
-- MongoDB-Server läuft auf `localhost:27017`
-- Maven (für Abhängigkeitsverwaltung)
-
-### Datenbank-Setup
-1. MongoDB-Server starten
-2. Die Anwendung erstellt automatisch die `ToDoApp`-Datenbank
-3. Collections `Users` und `Todo` werden automatisch erstellt
-
-### Anwendung starten
-```bash
-mvn clean compile
-mvn exec:java -Dexec.mainClass="org.example.App"
+### 4. UI-Responsivität und State-Management
+**Problem:** Synchronisation zwischen UI-Elementen und Datenaktualisierung.
+**Lösung:** Callback-basierte Aktualisierung und zentrale State-Verwaltung im `TodoSplitApp`:
+```java
+private void loadTasks() {
+    listModel.clear();
+    for (TodoTask task : repository.findAll()) listModel.addElement(task);
+}
 ```
 
-## Verwendung
+### 5. Enum-Persistierung in MongoDB
+**Problem:** `TaskStatus` Enum-Werte korrekt in MongoDB speichern und laden.
+**Lösung:** String-basierte Speicherung mit Konvertierungsmethoden:
+```java
+public static TaskStatus fromString(String status) {
+    for (TaskStatus taskStatus : TaskStatus.values()) {
+        if (taskStatus.displayName.equals(status)) {
+            return taskStatus;
+        }
+    }
+    return NOT_STARTED; // Default fallback
+}
+```
 
-1. **Erstmalige Benutzer**:
-   - Klicken Sie auf "Registrierung", um ein neues Konto zu erstellen
-   - Geben Sie Benutzername und Passwort ein
-   - Klicken Sie auf "Registrierung", um die Anmeldung abzuschließen
+### 6. Swing UI-Styling
+**Problem:** Moderne Optik mit Standard-Swing-Komponenten erreichen.
+**Lösung:** Custom-Styling mit abgerundeten Borders und Farbschemas:
+```java
+private JButton createRoundedButton(String text, Color bgColor) {
+    JButton button = new JButton(text);
+    button.setBorder(BorderFactory.createLineBorder(bgColor.darker(), 2, true));
+    // ...
+}
+```
 
-2. **Wiederkehrende Benutzer**:
-   - Geben Sie Ihren Benutzernamen und Ihr Passwort ein
-   - Klicken Sie auf "Anmelden", um auf Ihre Aufgaben zuzugreifen
-
-3. **Aufgaben verwalten**:
-   - Verwenden Sie "Neue Aufgabe", um Todos zu erstellen
-   - Füllen Sie Aufgabenname, Beschreibung und Inhalt aus
-   - Sehen Sie alle Ihre Aufgaben im Hauptfenster
-     
-4. **Chat verwenden**:
-   - Gruppennachrichten werden im oberen Chat-Bereich angezeigt
-   - Schreiben Sie Ihre Nachricht in das untere Textfeld
-   - Klicken Sie "Send", um Nachrichten an die Gruppe zu senden
-   - Nachrichten erscheinen mit Zeitstempel und Benutzername
-
-## Sicherheitsfeatures
-
-- Passwort-basierte Authentifizierung
-- Benutzersitzungsverwaltung
-- Datenisolierung zwischen Benutzern
-- Eingabevalidierung für Aufgabenerstellung
+## UML-Klassendiagramm

@@ -2,7 +2,7 @@
 
 ## Authors
 - Linlea - Chat Function, Task Status Information, Edit/Delete Task Function, Documentation (README, UML)
-- Sofiia - Entwicklung einer grafischen Benutzeroberfläche GUI, Individuelles Design, Verbindung zum Daten-Repository
+- Sofiia - Entwicklung einer grafischen Benutzeroberfläche GUI, Individuelles Design
 - Kateryna - App verbindung mit Mongodb, entwicklung der todotask Klasse
 
 ## Kurze Zusammenfassung des Programms und dessen Funktionalität

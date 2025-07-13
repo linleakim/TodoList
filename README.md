@@ -89,7 +89,7 @@ Die entwickelte Anwendung ist eine **Client-Server-basierte Todo-Applikation** m
 ## Schwierigkeiten bei der Entwicklung
 
 ### 1. Nachrichten-Timer
-**Problem:** Echtzeit-Messaging ohne komplexe WebSocket-Implementierung realisieren.
+**Problem:** Eine weitere Herausforderung war die Umsetzung eines Timers für die automatische Aktualisierung der Nachrichtenanzeige.
 **Lösung:** Timer mit 2-Sekunden-Intervall und Zeitstempel-Vergleich:
 ```java
 private void checkForNewMessages() {
@@ -101,15 +101,20 @@ private void checkForNewMessages() {
 ```
 
 ### 2. GUI-Styling
-**Problem:** Moderne Optik mit Standard-Swing-Komponenten erreichen.
-**Lösung:** Custom-Styling-Methoden mit abgerundeten Borders:
-```java
-private JButton createRoundedButton(String text, Color bgColor) {
-    button.setBorder(BorderFactory.createLineBorder(bgColor.darker(), 2, true));
-}
-```
+Ich wollte eine moderne und benutzerfreundliche Oberfläche mit Pastellfarben und abgerundeten Buttons gestalten.
+Dabei war es anfangs nicht leicht herauszufinden, wie man Komponenten wie JTextField, JButton, JTextArea oder JList optisch anpasst.
+Durch Recherche und Ausprobieren konnte ich ein Design mit sanften Farben, klarer Schrift und benutzerfreundlichen Eingabefeldern umsetzen.
 
-### 3. Arbeit mit MongoDB
+### 3. Benutzerauthentifizierung
+Die sichere Speicherung von Passwörtern und die Implementierung eines zuverlässigen Login-Systems waren eine herausfordernde Aufgabe.
+
+### 4. Datentrennung zwischen Benutzern
+Die Filterung von Aufgaben nach Benutzern und die Sicherstellung, dass jeder Benutzer nur seine eigenen Aufgaben sehen kann, erforderten zusätzliche Logik.
+
+### 5. Probleme mit Enum (TaskStatus)
+Anfangs hatte ich Schwierigkeiten zu verstehen, wie man Enums korrekt in einem switch-case verwendet.
+
+### 6. Arbeit mit MongoDB
 **Problem:** Java `LocalDateTime` und Enum-Werte sind nicht direkt MongoDB-kompatibel.
 **Lösung:** Konvertierungsmethoden zwischen Java-Typen und MongoDB-Dokumenten:
 ```java
